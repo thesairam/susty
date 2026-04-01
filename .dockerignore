@@ -1,0 +1,7 @@
+node_modules
+dist
+.webpack-cache
+.babel-cache
+.git
+*.md
+.DS_Store

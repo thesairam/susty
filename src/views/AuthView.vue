@@ -17,9 +17,10 @@
             <input type="password" id="password" v-model="password" required>
             <p v-if="!isLogin" class="password-strength">Strength: {{ passwordStrength }}</p>
           </div>
-          <button type="submit" class="btn" :disabled="!isFormValid">
-            {{ isLogin ? 'Login' : 'Sign Up' }}
+          <button type="submit" class="btn" :disabled="!isFormValid || loading">
+            {{ loading ? 'Please wait...' : (isLogin ? 'Login' : 'Sign Up') }}
           </button>
+          <p v-if="error" class="error-msg">{{ error }}</p>
         </form>
         <p class="toggle-auth">
           {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
@@ -30,6 +31,8 @@
   </template>
   
   <script>
+  import api from '../services/api'
+
   export default {
     name: 'AuthView',
     data() {
@@ -38,7 +41,8 @@
         name: '',
         email: '',
         password: '',
-        users: JSON.parse(localStorage.getItem('users')) || []
+        loading: false,
+        error: ''
       }
     },
     computed: {
@@ -64,26 +68,41 @@
           this.signUpUser();
         }
       },
-      loginUser() {
-        const user = this.users.find(u => u.email === this.email && u.password === this.password);
-        if (user) {
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          this.$emit('login-success');
-          this.$router.push('/'); // Redirect to homepage after successful login
-        } else {
-          alert('Invalid credentials. Please try again.');
+      async loginUser() {
+        this.loading = true;
+        this.error = '';
+        try {
+          const res = await api.login(this.email, this.password);
+          if (res && res.access_token) {
+            localStorage.setItem('susty_token', res.access_token);
+            localStorage.setItem('susty_user', JSON.stringify(res.user));
+            this.$emit('login-success');
+            this.$router.push('/');
+          } else {
+            this.error = (res && res.message) || 'Invalid credentials. Please try again.';
+          }
+        } catch {
+          this.error = 'Login failed. Please try again.';
         }
+        this.loading = false;
       },
-      signUpUser() {
-        if (this.users.some(u => u.email === this.email)) {
-          alert('Email already in use. Please use a different email.');
-          return;
+      async signUpUser() {
+        this.loading = true;
+        this.error = '';
+        try {
+          const res = await api.register(this.email, this.password, this.name);
+          if (res && res.access_token) {
+            localStorage.setItem('susty_token', res.access_token);
+            localStorage.setItem('susty_user', JSON.stringify(res.user));
+            this.$emit('login-success');
+            this.$router.push('/');
+          } else {
+            this.error = (res && res.message) || 'Registration failed.';
+          }
+        } catch {
+          this.error = 'Registration failed. Please try again.';
         }
-        const newUser = { name: this.name, email: this.email, password: this.password };
-        this.users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(this.users));
-        alert('Sign up successful! You can now log in.');
-        this.toggleAuth();
+        this.loading = false;
       },
       toggleAuth() {
         this.isLogin = !this.isLogin;
@@ -93,6 +112,7 @@
         this.name = '';
         this.email = '';
         this.password = '';
+        this.error = '';
       }
     }
   }
