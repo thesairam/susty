@@ -1,16 +1,16 @@
 <template>
-  <div class="messages">
-    <h1>💬 Messages</h1>
+  <div class="messages-page">
+    <h1 class="page-title">Messages</h1>
 
     <div class="messages-layout">
       <!-- Conversations List -->
       <div class="conversations card">
         <div class="conversations-header">
-          <input v-model="searchQuery" class="form-input" placeholder="🔍 Search conversations..." />
+          <input v-model="searchQuery" class="form-input search-input" placeholder="Search conversations..." />
         </div>
         <div class="conversations-list">
-          <div v-if="filteredConversations.length === 0" class="empty-state">
-            <p>No conversations yet. Start one from the Marketplace!</p>
+          <div v-if="filteredConversations.length === 0" class="empty-state-mini">
+            <p>No conversations yet</p>
           </div>
           <div
             v-for="convo in filteredConversations"
@@ -35,13 +35,12 @@
       <!-- Chat Area -->
       <div class="chat-area card">
         <div v-if="!activeConversation" class="empty-state">
-          <div class="empty-state-icon">💬</div>
           <p>Select a conversation to start chatting</p>
         </div>
 
         <template v-else>
           <div class="chat-header">
-            <div class="avatar">{{ activeConversation.charAt(0).toUpperCase() }}</div>
+            <div class="avatar avatar-sm">{{ activeConversation.charAt(0).toUpperCase() }}</div>
             <strong>{{ activeConversation }}</strong>
           </div>
 
@@ -66,7 +65,9 @@
               placeholder="Type a message..."
               @keyup.enter="sendMessage"
             />
-            <button class="btn btn-primary" @click="sendMessage" :disabled="!newMessage.trim()">Send</button>
+            <button class="btn btn-primary" @click="sendMessage" :disabled="!newMessage.trim()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
           </div>
         </template>
       </div>
@@ -93,12 +94,8 @@ export default {
     currentUser() {
       try { return JSON.parse(localStorage.getItem('susty_user')) || {} } catch { return {} }
     },
-    currentUserName() {
-      return this.currentUser.name || this.currentUser.email || 'User'
-    },
-    currentUserId() {
-      return this.currentUser.id
-    },
+    currentUserName() { return this.currentUser.name || this.currentUser.email || 'User' },
+    currentUserId() { return this.currentUser.id },
     conversations() {
       const convos = {}
       this.rawMessages.forEach(msg => {
@@ -110,12 +107,7 @@ export default {
         const key = otherId || otherName
         const msgDate = msg.createdAt || msg.date
         if (!convos[key] || new Date(msgDate) > new Date(convos[key].lastDate)) {
-          convos[key] = {
-            participant: otherName,
-            participantId: otherId,
-            lastMessage: msg.text || msg.content || '',
-            lastDate: msgDate
-          }
+          convos[key] = { participant: otherName, participantId: otherId, lastMessage: msg.text || msg.content || '', lastDate: msgDate }
         }
       })
       return Object.values(convos).sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate))
@@ -123,10 +115,7 @@ export default {
     filteredConversations() {
       if (!this.searchQuery.trim()) return this.conversations
       const q = this.searchQuery.toLowerCase()
-      return this.conversations.filter(c =>
-        c.participant.toLowerCase().includes(q) ||
-        c.lastMessage.toLowerCase().includes(q)
-      )
+      return this.conversations.filter(c => c.participant.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q))
     },
     activeMessages() {
       if (!this.activeConversationUserId) return []
@@ -149,9 +138,7 @@ export default {
         .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
   },
-  created() {
-    this.loadMessages()
-  },
+  created() { this.loadMessages() },
   methods: {
     async selectConversation(participant, participantId) {
       this.activeConversation = participant
@@ -160,7 +147,6 @@ export default {
       if (participantId) {
         const msgs = await api.getConversation(participantId)
         if (msgs) {
-          // merge into rawMessages replacing existing ones for this conversation
           const otherIds = new Set(msgs.map(m => m.id))
           this.rawMessages = this.rawMessages.filter(m => !otherIds.has(m.id)).concat(msgs)
         }
@@ -197,74 +183,64 @@ export default {
 </script>
 
 <style scoped>
-h1 { margin: 0 0 1.5rem; font-size: 1.8rem; }
+.messages-page { max-width: 960px; margin: 0 auto; }
+.page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 1.25rem; }
 
 .messages-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 300px 1fr;
+  gap: 0.875rem;
   height: calc(100vh - 220px);
   min-height: 500px;
 }
 
-.conversations {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.conversations-header { padding-bottom: 0.75rem; }
-.conversations-list { flex: 1; overflow-y: auto; margin: 0 -1.5rem; padding: 0; }
+.conversations { display: flex; flex-direction: column; overflow: hidden; }
+.conversations-header { padding-bottom: 0.625rem; }
+.search-input { font-size: 0.8125rem; }
+.conversations-list { flex: 1; overflow-y: auto; margin: 0 -1.25rem; }
 
 .convo-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1.5rem;
+  gap: 0.625rem;
+  padding: 0.75rem 1.25rem;
   cursor: pointer;
-  transition: background var(--transition);
+  transition: background 0.15s;
   position: relative;
 }
-.convo-item:hover { background: var(--light-bg); }
-.convo-item.active { background: var(--light-green); }
+.convo-item:hover { background: var(--hover); }
+.convo-item.active { background: var(--green-50); }
 .convo-info { flex: 1; min-width: 0; }
-.convo-top { display: flex; justify-content: space-between; align-items: center; }
-.convo-time { font-size: 0.75rem; color: var(--muted-text); }
+.convo-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; }
+.convo-time { font-size: 0.6875rem; color: var(--text-tertiary); }
 .convo-preview {
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted-text);
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.unread-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--primary-green);
-  flex-shrink: 0;
-}
+.unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.empty-state-mini { padding: 2rem 1rem; text-align: center; color: var(--text-tertiary); font-size: 0.8125rem; }
 
-.chat-area {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+.chat-area { display: flex; flex-direction: column; overflow: hidden; }
 .chat-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.625rem;
+  font-size: 0.9375rem;
 }
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .message { display: flex; }
@@ -272,44 +248,42 @@ h1 { margin: 0 0 1.5rem; font-size: 1.8rem; }
 .message.received { justify-content: flex-start; }
 .message-bubble {
   max-width: 70%;
-  padding: 0.65rem 0.95rem;
-  border-radius: 16px;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 18px;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 .message-bubble p { margin: 0; }
 .message.sent .message-bubble {
-  background: var(--primary-green);
-  color: white;
+  background: var(--text);
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 .message.received .message-bubble {
-  background: #f0f0f0;
-  color: var(--dark-text);
+  background: var(--hover);
+  color: var(--text);
   border-bottom-left-radius: 4px;
 }
 .message-time {
   display: block;
-  font-size: 0.65rem;
-  opacity: 0.7;
-  margin-top: 0.25rem;
+  font-size: 0.625rem;
+  opacity: 0.5;
+  margin-top: 0.2rem;
   text-align: right;
 }
 
 .chat-input {
   display: flex;
   gap: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color);
-  margin-top: 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.625rem;
 }
-.chat-input .form-input { flex: 1; }
+.chat-input .form-input { flex: 1; border-radius: 100px; padding-left: 1rem; }
+.chat-input .btn { border-radius: 100px; padding: 0.5rem 0.75rem; }
 
 @media (max-width: 768px) {
-  .messages-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .conversations { max-height: 300px; }
+  .messages-layout { grid-template-columns: 1fr; height: auto; }
+  .conversations { max-height: 280px; }
 }
 </style>

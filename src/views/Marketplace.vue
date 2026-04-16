@@ -1,19 +1,19 @@
 <template>
-  <div class="marketplace">
-    <!-- Marketplace Header -->
-    <div class="mp-header">
+  <div class="marketplace-page">
+    <!-- Header -->
+    <div class="page-header">
       <div>
-        <h1>🛒 Sustainability Marketplace</h1>
-        <p class="mp-subtitle">Buy, sell, trade — give items a second life and reduce waste.</p>
+        <h1 class="page-title">Marketplace</h1>
+        <p class="page-desc">Buy, sell, trade — give items a second life.</p>
       </div>
-      <button class="btn btn-primary btn-lg" @click="showListingForm = !showListingForm">
-        {{ showListingForm ? '✕ Cancel' : '+ List an Item' }}
+      <button class="btn btn-primary" @click="showListingForm = !showListingForm">
+        {{ showListingForm ? 'Cancel' : '+ List Item' }}
       </button>
     </div>
 
     <!-- New Listing Form -->
     <div v-if="showListingForm" class="card listing-form">
-      <h3>Create a Listing</h3>
+      <h3 class="form-title">Create a Listing</h3>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Item Name</label>
@@ -58,70 +58,52 @@
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <textarea v-model="newListing.description" class="form-textarea" placeholder="Describe the item, its condition, and why you're listing it..."></textarea>
+        <textarea v-model="newListing.description" class="form-textarea" placeholder="Describe the item..."></textarea>
       </div>
       <div class="form-actions">
-        <button class="btn btn-primary" @click="createListing" :disabled="!canCreateListing">Publish Listing</button>
+        <button class="btn btn-primary" @click="createListing" :disabled="!canCreateListing">Publish</button>
       </div>
     </div>
 
-    <!-- Search & Filter Bar -->
-    <div class="filter-bar card">
-      <input v-model="searchQuery" class="form-input search-input" placeholder="🔍 Search marketplace..." />
+    <!-- Search & Filter -->
+    <div class="search-bar">
+      <input v-model="searchQuery" class="form-input search-input" placeholder="Search marketplace..." />
+    </div>
+    <div class="filter-chips">
+      <button class="chip" :class="{ active: activeCategory === '' }" @click="activeCategory = ''">All</button>
+      <button v-for="cat in categories" :key="cat.id" class="chip" :class="{ active: activeCategory === cat.id }" @click="activeCategory = cat.id">{{ cat.icon }} {{ cat.name }}</button>
+    </div>
+    <div class="filter-row">
+      <select v-model="sortBy" class="form-select sort-select">
+        <option value="newest">Newest</option>
+        <option value="price-low">Price: Low → High</option>
+        <option value="price-high">Price: High → Low</option>
+      </select>
       <div class="filter-chips">
-        <button
-          class="chip"
-          :class="{ active: activeCategory === '' }"
-          @click="activeCategory = ''"
-        >All</button>
-        <button
-          v-for="cat in categories"
-          :key="cat.id"
-          class="chip"
-          :class="{ active: activeCategory === cat.id }"
-          @click="activeCategory = cat.id"
-        >{{ cat.icon }} {{ cat.name }}</button>
-      </div>
-      <div class="filter-row">
-        <select v-model="sortBy" class="form-select sort-select">
-          <option value="newest">Newest First</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="rating">Top Rated</option>
-        </select>
-        <div class="filter-chips-sm">
-          <button class="chip chip-sm" :class="{ active: typeFilter === '' }" @click="typeFilter = ''">All Types</button>
-          <button class="chip chip-sm" :class="{ active: typeFilter === 'sell' }" @click="typeFilter = 'sell'">Buy</button>
-          <button class="chip chip-sm" :class="{ active: typeFilter === 'trade' }" @click="typeFilter = 'trade'">Trade</button>
-          <button class="chip chip-sm" :class="{ active: typeFilter === 'free' }" @click="typeFilter = 'free'">Free</button>
-        </div>
+        <button class="chip chip-sm" :class="{ active: typeFilter === '' }" @click="typeFilter = ''">All</button>
+        <button class="chip chip-sm" :class="{ active: typeFilter === 'sell' }" @click="typeFilter = 'sell'">Buy</button>
+        <button class="chip chip-sm" :class="{ active: typeFilter === 'trade' }" @click="typeFilter = 'trade'">Trade</button>
+        <button class="chip chip-sm" :class="{ active: typeFilter === 'free' }" @click="typeFilter = 'free'">Free</button>
       </div>
     </div>
 
-    <!-- Results Count -->
-    <div class="results-info">
-      <span>{{ filteredListings.length }} item{{ filteredListings.length !== 1 ? 's' : '' }} found</span>
-    </div>
+    <div class="results-info">{{ filteredListings.length }} item{{ filteredListings.length !== 1 ? 's' : '' }}</div>
 
     <!-- Listings Grid -->
     <div class="product-grid">
       <div v-if="filteredListings.length === 0" class="empty-state" style="grid-column: 1/-1;">
         <div class="empty-state-icon">🔍</div>
-        <p>No items match your search. Try different filters or list something!</p>
+        <p>No items match your search.</p>
       </div>
 
       <div v-for="listing in filteredListings" :key="listing.id" class="listing-card card">
-        <!-- Image Placeholder -->
-        <div class="listing-image" :style="{ background: getCategoryColor(listing.category) }">
+        <div class="listing-image" :class="'cat-' + (listing.category || 'other')">
           <span class="listing-image-icon">{{ getCategoryIcon(listing.category) }}</span>
           <div class="listing-badges">
             <span v-if="listing.type === 'free'" class="badge badge-green">FREE</span>
             <span v-else-if="listing.type === 'trade'" class="badge badge-blue">TRADE</span>
-            <span v-if="listing.carbonSaved" class="badge badge-green">🌿 -{{ listing.carbonSaved }}kg CO₂</span>
           </div>
         </div>
-
-        <!-- Listing Info -->
         <div class="listing-info">
           <div class="listing-top">
             <h3 class="listing-name">{{ listing.name }}</h3>
@@ -130,19 +112,18 @@
           </div>
           <p class="listing-desc">{{ listing.description }}</p>
           <div class="listing-meta">
-            <span class="badge badge-green">{{ listing.conditionLabel }}</span>
-            <span class="listing-location" v-if="listing.location">📍 {{ listing.location }}</span>
+            <span class="badge badge-green">{{ listing.condition || 'Good' }}</span>
+            <span class="meta-location" v-if="listing.location">{{ listing.location }}</span>
           </div>
           <div class="listing-seller">
             <div class="avatar avatar-sm">{{ sellerName(listing).charAt(0).toUpperCase() }}</div>
             <span class="seller-name">{{ sellerName(listing) }}</span>
-            <span class="seller-rating" v-if="listing.rating">⭐ {{ listing.rating.toFixed(1) }}</span>
           </div>
           <div class="listing-actions">
             <button class="btn btn-primary btn-sm" @click="contactSeller(listing)">
-              {{ listing.type === 'trade' ? 'Propose Trade' : listing.type === 'free' ? 'Request' : 'Buy Now' }}
+              {{ listing.type === 'trade' ? 'Trade' : listing.type === 'free' ? 'Request' : 'Buy' }}
             </button>
-            <button class="btn btn-outline btn-sm" @click="toggleFavorite(listing)">
+            <button class="btn btn-ghost btn-sm" @click="toggleFavorite(listing)">
               {{ listing.favorited ? '❤️' : '🤍' }}
             </button>
           </div>
@@ -203,24 +184,17 @@ export default {
           (l.location || '').toLowerCase().includes(q)
         )
       }
-      if (this.activeCategory) {
-        result = result.filter(l => l.category === this.activeCategory)
-      }
-      if (this.typeFilter) {
-        result = result.filter(l => l.type === this.typeFilter)
-      }
+      if (this.activeCategory) result = result.filter(l => l.category === this.activeCategory)
+      if (this.typeFilter) result = result.filter(l => l.type === this.typeFilter)
       switch (this.sortBy) {
         case 'price-low': result.sort((a, b) => a.price - b.price); break
         case 'price-high': result.sort((a, b) => b.price - a.price); break
-        case 'rating': result.sort((a, b) => (b.rating || 0) - (a.rating || 0)); break
         default: result.sort((a, b) => b.id - a.id)
       }
       return result
     }
   },
-  created() {
-    this.loadListings()
-  },
+  created() { this.loadListings() },
   methods: {
     sellerName(listing) {
       if (!listing.seller) return 'Seller'
@@ -229,23 +203,6 @@ export default {
     getCategoryIcon(catId) {
       const cat = this.categories.find(c => c.id === catId)
       return cat ? cat.icon : '📦'
-    },
-    getCategoryColor(catId) {
-      const colors = {
-        furniture: 'linear-gradient(135deg, #a8d8a8, #6bb86b)',
-        electronics: 'linear-gradient(135deg, #90caf9, #42a5f5)',
-        clothing: 'linear-gradient(135deg, #ce93d8, #ab47bc)',
-        diy: 'linear-gradient(135deg, #ffcc80, #ffa726)',
-        garden: 'linear-gradient(135deg, #a5d6a7, #66bb6a)',
-        kitchen: 'linear-gradient(135deg, #ef9a9a, #ef5350)',
-        books: 'linear-gradient(135deg, #b39ddb, #7e57c2)',
-        sports: 'linear-gradient(135deg, #80deea, #26c6da)'
-      }
-      return colors[catId] || 'linear-gradient(135deg, #e0e0e0, #bdbdbd)'
-    },
-    conditionLabel(cond) {
-      const labels = { 'new': 'New', 'like-new': 'Like New', 'good': 'Good', 'fair': 'Fair' }
-      return labels[cond] || cond
     },
     async createListing() {
       if (!this.canCreateListing) return
@@ -263,14 +220,10 @@ export default {
       this.showListingForm = false
       this.newListing = { name: '', price: 0, category: '', condition: 'good', type: 'sell', location: '', description: '' }
     },
-    toggleFavorite(listing) {
-      listing.favorited = !listing.favorited
-    },
+    toggleFavorite(listing) { listing.favorited = !listing.favorited },
     async contactSeller(listing) {
       const sellerId = typeof listing.seller === 'object' ? listing.seller.id : null
-      if (sellerId) {
-        await api.sendMessage(sellerId, `Hi! I'm interested in your listing: "${listing.name}"`)
-      }
+      if (sellerId) await api.sendMessage(sellerId, `Hi! I'm interested in your listing: "${listing.name}"`)
     },
     async loadListings() {
       const data = await api.getListings()
@@ -281,85 +234,68 @@ export default {
 </script>
 
 <style scoped>
-.mp-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-.mp-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
-.mp-subtitle { color: var(--muted-text); margin: 0; }
+.marketplace-page { max-width: 960px; margin: 0 auto; }
 
-.listing-form { margin-bottom: 1.5rem; }
-.listing-form h3 { margin-top: 0; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+.page-desc { color: var(--text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0; }
+
+.listing-form { margin-bottom: 1.25rem; }
+.form-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 700; }
 .form-actions { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
 
-.filter-bar { margin-bottom: 1rem; }
-.search-input { margin-bottom: 0.75rem; }
-.filter-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-.filter-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-.sort-select { max-width: 200px; }
-.filter-chips-sm { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.search-bar { margin-bottom: 0.75rem; }
+.search-input { background: var(--hover); border-color: transparent; }
+.search-input:focus { background: var(--bg-card); border-color: var(--text); }
 
-.chip {
-  padding: 0.35rem 0.85rem;
-  border: 2px solid var(--border-color);
-  border-radius: 20px;
-  background: white;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all var(--transition);
-  white-space: nowrap;
-}
-.chip:hover { border-color: var(--primary-green); color: var(--primary-green); }
-.chip.active { background: var(--primary-green); color: white; border-color: var(--primary-green); }
-.chip-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+.filter-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin: 0.75rem 0 1rem; }
+.sort-select { max-width: 180px; font-size: 0.8125rem; padding: 0.4rem 0.75rem; }
 
-.results-info { margin-bottom: 1rem; font-size: 0.9rem; color: var(--muted-text); }
+.results-info { margin-bottom: 1rem; font-size: 0.8125rem; color: var(--text-tertiary); font-weight: 500; }
 
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
 
-.listing-card { padding: 0; overflow: hidden; }
+.listing-card { padding: 0; overflow: hidden; transition: transform var(--transition), border-color var(--transition); }
+.listing-card:hover { transform: translateY(-2px); }
 
 .listing-image {
-  height: 160px;
+  height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  background: var(--green-50);
 }
-.listing-image-icon { font-size: 3.5rem; }
-.listing-badges {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  display: flex;
-  gap: 0.35rem;
-}
+.cat-furniture { background: var(--green-50); }
+.cat-electronics { background: var(--blue-light); }
+.cat-clothing { background: #faf5ff; }
+.cat-diy { background: var(--orange-light); }
+.cat-garden { background: var(--green-50); }
+.cat-kitchen { background: #fef2f2; }
+.cat-books { background: #f5f3ff; }
+.cat-sports { background: #ecfeff; }
+.listing-image-icon { font-size: 3rem; }
+.listing-badges { position: absolute; top: 0.5rem; left: 0.5rem; display: flex; gap: 0.25rem; }
 
-.listing-info { padding: 1rem 1.25rem; }
-.listing-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
-.listing-name { margin: 0; font-size: 1.05rem; flex: 1; }
-.listing-price { font-weight: 700; color: var(--primary-green); font-size: 1.1rem; white-space: nowrap; margin-left: 0.75rem; }
-.listing-price.free { color: var(--accent-orange); }
-.listing-desc { color: var(--muted-text); font-size: 0.85rem; margin: 0 0 0.75rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.listing-meta { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; }
-.listing-location { font-size: 0.8rem; color: var(--muted-text); }
-.listing-seller { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 0.85rem; }
-.seller-name { font-weight: 500; }
-.seller-rating { color: var(--accent-orange); margin-left: auto; }
-.listing-actions { display: flex; gap: 0.5rem; }
+.listing-info { padding: 1rem; }
+.listing-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.375rem; }
+.listing-name { margin: 0; font-size: 0.9375rem; font-weight: 600; flex: 1; letter-spacing: -0.01em; }
+.listing-price { font-weight: 700; color: var(--green); font-size: 1rem; white-space: nowrap; margin-left: 0.5rem; }
+.listing-price.free { color: var(--orange); }
+.listing-desc { color: var(--text-secondary); font-size: 0.8125rem; margin: 0 0 0.625rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.listing-meta { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.625rem; }
+.meta-location { font-size: 0.75rem; color: var(--text-tertiary); }
+.listing-seller { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.625rem; font-size: 0.8125rem; }
+.seller-name { font-weight: 500; color: var(--text); }
+.listing-actions { display: flex; gap: 0.375rem; }
 
 @media (max-width: 768px) {
-  .mp-header { flex-direction: column; gap: 1rem; }
-  .form-row { grid-template-columns: 1fr; }
-  .product-grid { grid-template-columns: 1fr; }
-  .filter-row { flex-direction: column; }
+  .page-header { flex-direction: column; gap: 0.75rem; }
+  .product-grid { grid-template-columns: 1fr 1fr; }
+  .filter-row { flex-direction: column; align-items: stretch; }
   .sort-select { max-width: 100%; }
+}
+@media (max-width: 480px) {
+  .product-grid { grid-template-columns: 1fr; }
 }
 </style>

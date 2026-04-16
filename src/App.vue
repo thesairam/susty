@@ -1,59 +1,77 @@
 <template>
   <div id="app">
     <template v-if="isAuthenticated">
-      <header>
-        <div class="header-left">
-          <router-link to="/" class="logo">🌍 Susty</router-link>
-        </div>
-        <nav class="nav-main">
-          <router-link to="/" title="Feed">🏠 Feed</router-link>
-          <router-link to="/marketplace" title="Marketplace">🛒 Market</router-link>
-          <router-link to="/events" title="Events">📅 Events</router-link>
-          <router-link to="/community" title="Community">👥 Community</router-link>
-          <router-link to="/challenges" title="Challenges">🏆 Challenges</router-link>
-          <router-link to="/knowledge" title="Knowledge Hub">📚 Learn</router-link>
-          <router-link to="/donations" title="Donations">🎁 Give</router-link>
-        </nav>
-        <div class="header-right">
-          <router-link to="/messages" class="nav-icon" title="Messages">💬</router-link>
-          <router-link to="/profile" class="nav-icon" title="Profile">👤</router-link>
-          <router-link to="/about" class="nav-icon" title="About">ℹ️</router-link>
-          <a href="#" @click.prevent="logout" class="auth-link" title="Sign Out">Sign Out</a>
-        </div>
-        <!-- Mobile nav toggle -->
-        <button class="mobile-toggle" @click="mobileNav = !mobileNav">☰</button>
-      </header>
+      <!-- Top Navigation -->
+      <nav class="topnav">
+        <div class="topnav-inner">
+          <router-link to="/" class="topnav-logo">
+            <span class="logo-icon">🌍</span>
+            <span class="logo-text">susty</span>
+          </router-link>
 
-      <!-- Mobile Navigation -->
-      <div v-if="mobileNav" class="mobile-nav" @click="mobileNav = false">
-        <router-link to="/">🏠 Feed</router-link>
-        <router-link to="/marketplace">🛒 Marketplace</router-link>
-        <router-link to="/events">📅 Events</router-link>
-        <router-link to="/community">👥 Community</router-link>
-        <router-link to="/challenges">🏆 Challenges</router-link>
-        <router-link to="/knowledge">📚 Knowledge Hub</router-link>
-        <router-link to="/donations">🎁 Donations</router-link>
-        <router-link to="/messages">💬 Messages</router-link>
-        <router-link to="/profile">👤 Profile</router-link>
-        <router-link to="/about">ℹ️ About</router-link>
-        <a href="#" @click.prevent="logout">🚪 Sign Out</a>
-      </div>
+          <div class="topnav-links hide-mobile">
+            <router-link to="/" class="nav-link" title="Feed">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </router-link>
+            <router-link to="/marketplace" class="nav-link" title="Marketplace">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            </router-link>
+            <router-link to="/events" class="nav-link" title="Events">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </router-link>
+            <router-link to="/community" class="nav-link" title="Community">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </router-link>
+            <router-link to="/challenges" class="nav-link" title="Challenges">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </router-link>
+            <router-link to="/knowledge" class="nav-link" title="Knowledge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            </router-link>
+            <router-link to="/donations" class="nav-link" title="Donations">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            </router-link>
+          </div>
 
-      <main>
-        <router-view></router-view>
-      </main>
-
-      <footer>
-        <div class="footer-content">
-          <p>&copy; 2026 Susty — A Better Social Media, A Better World! 🌍</p>
-          <div class="footer-links">
-            <router-link to="/about">About</router-link>
-            <router-link to="/knowledge">Knowledge Hub</router-link>
-            <router-link to="/community">Community</router-link>
+          <div class="topnav-actions">
+            <router-link to="/messages" class="nav-link" title="Messages">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </router-link>
+            <router-link to="/profile" class="nav-link hide-mobile" title="Profile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </router-link>
+            <button class="nav-link logout-btn hide-mobile" @click="logout" title="Sign Out">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
           </div>
         </div>
-      </footer>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <router-view :key="$route.fullPath" />
+      </main>
+
+      <!-- Bottom Navigation (Mobile) -->
+      <nav class="bottomnav hide-desktop">
+        <router-link to="/" class="bottomnav-link" exact-active-class="active">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </router-link>
+        <router-link to="/marketplace" class="bottomnav-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        </router-link>
+        <router-link to="/community" class="bottomnav-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </router-link>
+        <router-link to="/events" class="bottomnav-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </router-link>
+        <router-link to="/profile" class="bottomnav-link">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </router-link>
+      </nav>
     </template>
+
     <template v-else>
       <AuthView @login-success="onLoginSuccess" />
     </template>
@@ -65,13 +83,10 @@ import AuthView from './views/AuthView.vue'
 
 export default {
   name: 'App',
-  components: {
-    AuthView
-  },
+  components: { AuthView },
   data() {
     return {
-      isAuthenticated: false,
-      mobileNav: false
+      isAuthenticated: false
     }
   },
   created() {
@@ -89,186 +104,121 @@ export default {
       localStorage.removeItem('susty_token')
       localStorage.removeItem('susty_user')
       this.isAuthenticated = false
-      this.mobileNav = false
     }
   }
 }
 </script>
 
 <style>
-:root {
-  --primary-green: #4CAF50;
-  --secondary-green: #45a049;
-  --dark-green: #2e7d32;
-  --light-green: #e8f5e9;
-  --primary-blue: #3498db;
-  --secondary-blue: #2980b9;
-  --accent-orange: #e67e22;
-  --light-bg: #f5f7f5;
-  --dark-text: #2c3e50;
-  --muted-text: #7f8c8d;
-  --border-color: #e0e0e0;
-  --card-bg: #ffffff;
-  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --transition: 0.3s ease;
-}
-
-body {
-  font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
-  color: var(--dark-text);
-  background-color: var(--light-bg);
-  margin: 0;
-  padding: 0;
-}
+@import './assets/styles.css';
 
 #app {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }
 
-header {
-  background: linear-gradient(135deg, var(--dark-green), var(--primary-blue));
-  color: white;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  height: 56px;
+/* ── Top Navigation ── */
+.topnav {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.92);
 }
-
-.header-left { display: flex; align-items: center; }
-
-.logo {
-  font-size: 1.4rem;
+.topnav-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 1.25rem;
+  gap: 1rem;
+}
+.topnav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.logo-icon { font-size: 1.5rem; }
+.logo-text {
+  font-size: 1.375rem;
   font-weight: 800;
-  color: white;
-  text-decoration: none;
-  margin-right: 1.5rem;
-  letter-spacing: -0.5px;
+  color: var(--text);
+  letter-spacing: -0.04em;
 }
-
-.nav-main {
-  display: flex;
-  gap: 0.15rem;
-  flex: 1;
-}
-
-.nav-main a {
-  color: rgba(255,255,255,0.8);
-  text-decoration: none;
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.nav-main a:hover,
-.nav-main a.router-link-active {
-  background: rgba(255,255,255,0.15);
-  color: white;
-}
-
-.header-right {
+.topnav-links {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
+  justify-content: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+.topnav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
-.nav-icon {
-  color: rgba(255,255,255,0.8);
+.nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-xs);
+  color: var(--text-tertiary);
+  transition: all var(--transition);
   text-decoration: none;
-  padding: 0.35rem;
-  font-size: 1.1rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-.nav-icon:hover { background: rgba(255,255,255,0.15); color: white; }
-
-.auth-link {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  text-decoration: none;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.auth-link:hover { background: rgba(255,255,255,0.25); }
-
-.mobile-toggle {
-  display: none;
-  background: none;
   border: none;
-  color: white;
-  font-size: 1.4rem;
+  background: none;
   cursor: pointer;
-  padding: 0.25rem;
-  margin-left: auto;
 }
+.nav-link:hover { color: var(--text); background: var(--hover); }
+.nav-link.router-link-active { color: var(--text); }
+.logout-btn:hover { color: var(--red); }
 
-.mobile-nav {
-  display: none;
-  flex-direction: column;
-  background: var(--dark-text);
-  padding: 0.5rem 0;
-  position: sticky;
-  top: 56px;
-  z-index: 49;
-}
-.mobile-nav a {
-  color: white;
-  text-decoration: none;
-  padding: 0.65rem 1.5rem;
-  font-size: 0.95rem;
-  transition: background 0.2s;
-}
-.mobile-nav a:hover { background: rgba(255,255,255,0.1); }
-
-main {
+/* ── Main Content ── */
+.main-content {
   flex: 1;
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1024px;
   width: 100%;
-}
-
-footer {
-  background: var(--dark-text);
-  color: rgba(255,255,255,0.7);
-  padding: 1.25rem 1.5rem;
-  margin-top: auto;
-}
-.footer-content {
-  max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  padding: 1.5rem 1.25rem 2rem;
 }
-.footer-content p { margin: 0; font-size: 0.85rem; }
-.footer-links { display: flex; gap: 1rem; }
-.footer-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.8rem; }
-.footer-links a:hover { color: white; }
 
-@media (max-width: 900px) {
-  .nav-main, .header-right { display: none; }
-  .mobile-toggle { display: block; }
-  .mobile-nav { display: flex; }
-  main { padding: 1rem; }
-  .footer-content { flex-direction: column; text-align: center; }
+/* ── Bottom Navigation (Mobile) ── */
+.bottomnav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bottomnav-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0;
+  color: var(--text-tertiary);
+  transition: color var(--transition);
+}
+.bottomnav-link:hover,
+.bottomnav-link.router-link-active,
+.bottomnav-link.active { color: var(--text); }
+
+@media (max-width: 768px) {
+  .main-content { padding: 1rem 1rem 5rem; }
 }
 </style>

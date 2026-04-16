@@ -1,18 +1,18 @@
 <template>
-  <div class="knowledge">
-    <div class="knowledge-header">
+  <div class="knowledge-page">
+    <div class="page-header">
       <div>
-        <h1>📚 Knowledge Hub</h1>
-        <p class="knowledge-subtitle">Curated sustainability guides, tutorials, and community knowledge.</p>
+        <h1 class="page-title">Knowledge Hub</h1>
+        <p class="page-desc">Curated sustainability guides, tutorials, and community knowledge.</p>
       </div>
       <button class="btn btn-primary" @click="showCreateForm = !showCreateForm">
-        {{ showCreateForm ? '✕ Cancel' : '+ Write a Guide' }}
+        {{ showCreateForm ? 'Cancel' : '+ Write Guide' }}
       </button>
     </div>
 
     <!-- Create Article Form -->
     <div v-if="showCreateForm" class="card article-form">
-      <h3>Write a Guide or Tutorial</h3>
+      <h3 class="form-heading">Write a Guide</h3>
       <div class="form-group">
         <label class="form-label">Title</label>
         <input v-model="newArticle.title" class="form-input" placeholder="Guide title..." />
@@ -49,33 +49,27 @@
 
     <!-- Search & Filters -->
     <div class="filter-bar card">
-      <input v-model="searchQuery" class="form-input" placeholder="🔍 Search guides and tutorials..." />
+      <input v-model="searchQuery" class="form-input search-input" placeholder="Search guides and tutorials..." />
       <div class="filter-chips">
         <button class="chip" :class="{ active: activeCategory === '' }" @click="activeCategory = ''">All</button>
-        <button
-          v-for="cat in categories"
-          :key="cat.id"
-          class="chip"
-          :class="{ active: activeCategory === cat.id }"
-          @click="activeCategory = cat.id"
-        >{{ cat.icon }} {{ cat.name }}</button>
+        <button v-for="cat in categories" :key="cat.id" class="chip" :class="{ active: activeCategory === cat.id }" @click="activeCategory = cat.id">{{ cat.icon }} {{ cat.name }}</button>
       </div>
     </div>
 
     <!-- Featured Guides -->
-    <section v-if="!searchQuery && !activeCategory" class="featured-section">
-      <h2 class="section-title">⭐ Featured Guides</h2>
+    <section v-if="!searchQuery && !activeCategory && featuredArticles.length" class="featured-section">
+      <h2 class="section-title">Featured</h2>
       <div class="featured-grid">
         <div v-for="article in featuredArticles" :key="article.id" class="featured-card card" @click="openArticle(article)">
-          <div class="featured-image" :style="{ background: getCatColor(article.category) }">
+          <div class="featured-image" :class="'fcat-' + article.category">
             <span>{{ getCatIcon(article.category) }}</span>
           </div>
           <div class="featured-info">
             <span class="badge badge-green">{{ getCatName(article.category) }}</span>
             <h3>{{ article.title }}</h3>
             <div class="article-meta">
-              <span>By {{ authorName(article.author) }}</span>
-              <span>📖 {{ article.readTime }} min read</span>
+              <span>{{ authorName(article.author) }}</span>
+              <span>{{ readTime(article) }} min read</span>
             </div>
           </div>
         </div>
@@ -84,16 +78,13 @@
 
     <!-- All Articles -->
     <section>
-      <h2 class="section-title" v-if="!searchQuery && !activeCategory">📖 All Guides</h2>
+      <h2 class="section-title" v-if="!searchQuery && !activeCategory">All Guides</h2>
       <div v-if="filteredArticles.length === 0" class="empty-state">
-        <div class="empty-state-icon">📚</div>
         <p>No guides found. Be the first to write one!</p>
       </div>
       <div class="articles-list">
         <div v-for="article in filteredArticles" :key="article.id" class="article-card card" @click="openArticle(article)">
-          <div class="article-icon" :style="{ background: getCatColor(article.category) }">
-            {{ getCatIcon(article.category) }}
-          </div>
+          <div class="article-icon" :class="'fcat-' + article.category">{{ getCatIcon(article.category) }}</div>
           <div class="article-body">
             <div class="article-badges">
               <span class="badge badge-green">{{ getCatName(article.category) }}</span>
@@ -102,10 +93,10 @@
             <h3>{{ article.title }}</h3>
             <p class="article-excerpt">{{ article.content.substring(0, 150) }}...</p>
             <div class="article-footer">
-              <span class="article-author">By {{ authorName(article.author) }}</span>
-              <span>📖 {{ article.readTime }} min</span>
-              <span>❤️ {{ article.likes }}</span>
-              <span>👁️ {{ article.views }}</span>
+              <span class="article-author">{{ authorName(article.author) }}</span>
+              <span>{{ readTime(article) }} min</span>
+              <span>{{ article.likes || 0 }} likes</span>
+              <span>{{ article.views || 0 }} views</span>
             </div>
             <div class="article-tags" v-if="article.tags && article.tags.length">
               <span class="hashtag" v-for="tag in article.tags" :key="tag">#{{ tag }}</span>
@@ -118,7 +109,7 @@
     <!-- Article Modal -->
     <div v-if="selectedArticle" class="modal-overlay" @click.self="selectedArticle = null">
       <div class="modal card">
-        <button class="modal-close" @click="selectedArticle = null">✕</button>
+        <button class="modal-close" @click="selectedArticle = null">&times;</button>
         <div class="modal-header">
           <span class="badge badge-green">{{ getCatName(selectedArticle.category) }}</span>
           <span class="badge" :class="selectedArticle.difficulty === 'beginner' ? 'badge-green' : selectedArticle.difficulty === 'intermediate' ? 'badge-blue' : 'badge-orange'">{{ selectedArticle.difficulty }}</span>
@@ -126,15 +117,18 @@
         <h2>{{ selectedArticle.title }}</h2>
         <div class="modal-meta">
           <span>By <strong>{{ authorName(selectedArticle.author) }}</strong></span>
-          <span>📖 {{ selectedArticle.readTime }} min read</span>
-          <span>❤️ {{ selectedArticle.likes }}</span>
+          <span>{{ readTime(selectedArticle) }} min read</span>
+          <span>{{ selectedArticle.likes || 0 }} likes</span>
         </div>
         <div class="modal-content">
           <p v-for="(para, i) in selectedArticle.content.split('\n\n')" :key="i">{{ para }}</p>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-outline btn-sm" @click="likeArticle(selectedArticle)">❤️ Like</button>
-          <button class="btn btn-outline btn-sm" @click="selectedArticle = null">Close</button>
+          <button class="btn btn-outline btn-sm" @click="likeArticle(selectedArticle)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Like
+          </button>
+          <button class="btn btn-ghost btn-sm" @click="selectedArticle = null">Close</button>
         </div>
       </div>
     </div>
@@ -152,13 +146,7 @@ export default {
       searchQuery: '',
       activeCategory: '',
       selectedArticle: null,
-      newArticle: {
-        title: '',
-        category: '',
-        difficulty: 'beginner',
-        content: '',
-        tags: ''
-      },
+      newArticle: { title: '', category: '', difficulty: 'beginner', content: '', tags: '' },
       categories: [
         { id: 'composting', name: 'Composting', icon: '🌱' },
         { id: 'minimalism', name: 'Minimalism', icon: '📦' },
@@ -192,16 +180,16 @@ export default {
           (a.tags || []).some(t => t.toLowerCase().includes(q))
         )
       }
-      if (this.activeCategory) {
-        result = result.filter(a => a.category === this.activeCategory)
-      }
+      if (this.activeCategory) result = result.filter(a => a.category === this.activeCategory)
       return result
     }
   },
-  created() {
-    this.loadArticles()
-  },
+  created() { this.loadArticles() },
   methods: {
+    readTime(article) {
+      if (article.readTime) return article.readTime
+      return Math.max(1, Math.ceil((article.content || '').length / 1000))
+    },
     authorName(obj) {
       if (!obj) return 'Anonymous'
       return typeof obj === 'object' ? obj.name : obj
@@ -213,19 +201,6 @@ export default {
     getCatName(id) {
       const cat = this.categories.find(c => c.id === id)
       return cat ? cat.name : 'General'
-    },
-    getCatColor(id) {
-      const colors = {
-        composting: 'linear-gradient(135deg, #66BB6A, #43A047)',
-        minimalism: 'linear-gradient(135deg, #90CAF9, #42A5F5)',
-        energy: 'linear-gradient(135deg, #FFD54F, #FFC107)',
-        food: 'linear-gradient(135deg, #A5D6A7, #66BB6A)',
-        fashion: 'linear-gradient(135deg, #CE93D8, #AB47BC)',
-        transport: 'linear-gradient(135deg, #80DEEA, #26C6DA)',
-        water: 'linear-gradient(135deg, #81D4FA, #29B6F6)',
-        diy: 'linear-gradient(135deg, #FFAB91, #FF7043)'
-      }
-      return colors[id] || 'linear-gradient(135deg, #E0E0E0, #BDBDBD)'
     },
     async openArticle(article) {
       const data = await api.getArticle(article.id)
@@ -242,22 +217,19 @@ export default {
       if (updated) {
         const idx = this.articles.findIndex(a => a.id === article.id)
         if (idx >= 0) this.articles.splice(idx, 1, updated)
-        if (this.selectedArticle && this.selectedArticle.id === article.id) {
-          this.selectedArticle = updated
-        }
+        if (this.selectedArticle && this.selectedArticle.id === article.id) this.selectedArticle = updated
       }
     },
     async publishArticle() {
       if (!this.canPublish) return
       const tags = this.newArticle.tags.split(',').map(t => t.trim()).filter(Boolean)
-      const data = {
+      const article = await api.createArticle({
         title: this.newArticle.title.trim(),
         category: this.newArticle.category,
         difficulty: this.newArticle.difficulty,
         content: this.newArticle.content.trim(),
         tags
-      }
-      const article = await api.createArticle(data)
+      })
       if (article) this.articles.unshift(article)
       this.showCreateForm = false
       this.newArticle = { title: '', category: '', difficulty: 'beginner', content: '', tags: '' }
@@ -271,122 +243,62 @@ export default {
 </script>
 
 <style scoped>
-.knowledge-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
-.knowledge-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
-.knowledge-subtitle { color: var(--muted-text); margin: 0; }
+.knowledge-page { max-width: 960px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.page-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+.page-desc { color: var(--text-secondary); font-size: 0.875rem; margin: 0.25rem 0 0; }
 
-.article-form { margin-bottom: 1.5rem; }
-.article-form h3 { margin-top: 0; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.article-form { margin-bottom: 1.25rem; }
+.form-heading { margin: 0 0 1rem; font-size: 1rem; font-weight: 600; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
 .form-actions { display: flex; justify-content: flex-end; }
 
-.filter-bar { margin-bottom: 1.5rem; }
-.filter-bar .form-input { margin-bottom: 0.75rem; }
-.filter-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.chip {
-  padding: 0.35rem 0.85rem;
-  border: 2px solid var(--border-color);
-  border-radius: 20px;
-  background: white;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all var(--transition);
-  white-space: nowrap;
-}
-.chip:hover { border-color: var(--primary-green); color: var(--primary-green); }
-.chip.active { background: var(--primary-green); color: white; border-color: var(--primary-green); }
+.filter-bar { margin-bottom: 1.25rem; }
+.search-input { margin-bottom: 0.625rem; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 
-.featured-section { margin-bottom: 2rem; }
-.featured-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
-.featured-card { padding: 0; overflow: hidden; cursor: pointer; }
+/* Featured */
+.featured-section { margin-bottom: 1.5rem; }
+.featured-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.875rem; }
+.featured-card { padding: 0; overflow: hidden; cursor: pointer; transition: transform 0.15s; }
 .featured-card:hover { transform: translateY(-2px); }
-.featured-image {
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 3rem;
-}
-.featured-info { padding: 1rem 1.25rem; }
-.featured-info h3 { margin: 0.5rem 0 0.35rem; font-size: 1.05rem; }
+.featured-image { height: 100px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+.fcat-composting { background: #d1fae5; }
+.fcat-minimalism { background: #e0f2fe; }
+.fcat-energy { background: #fef3c7; }
+.fcat-food { background: #dcfce7; }
+.fcat-fashion { background: #f3e8ff; }
+.fcat-transport { background: #cffafe; }
+.fcat-water { background: #dbeafe; }
+.fcat-diy { background: #ffedd5; }
+.featured-info { padding: 0.875rem 1rem; }
+.featured-info h3 { margin: 0.375rem 0 0.25rem; font-size: 0.9375rem; font-weight: 600; }
+.article-meta { font-size: 0.75rem; color: var(--text-tertiary); display: flex; gap: 0.75rem; }
 
-.articles-list { display: flex; flex-direction: column; gap: 1rem; }
-.article-card {
-  display: flex;
-  gap: 1rem;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.article-card:hover { transform: translateX(4px); }
-.article-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-.article-body { flex: 1; }
-.article-badges { display: flex; gap: 0.35rem; margin-bottom: 0.35rem; }
-.article-body h3 { margin: 0 0 0.25rem; font-size: 1rem; }
-.article-excerpt { font-size: 0.85rem; color: var(--muted-text); margin: 0 0 0.5rem; line-height: 1.4; }
-.article-footer { display: flex; gap: 1rem; font-size: 0.8rem; color: var(--muted-text); margin-bottom: 0.35rem; }
-.article-author { font-weight: 500; }
-.article-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.article-meta { font-size: 0.8rem; color: var(--muted-text); display: flex; gap: 1rem; }
+/* Article List */
+.articles-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.article-card { display: flex; gap: 0.875rem; cursor: pointer; transition: background 0.15s; }
+.article-card:hover { background: var(--hover); }
+.article-icon { width: 52px; height: 52px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.375rem; flex-shrink: 0; }
+.article-body { flex: 1; min-width: 0; }
+.article-badges { display: flex; gap: 0.3rem; margin-bottom: 0.25rem; }
+.article-body h3 { margin: 0 0 0.2rem; font-size: 0.9375rem; font-weight: 600; }
+.article-excerpt { font-size: 0.8125rem; color: var(--text-secondary); margin: 0 0 0.375rem; line-height: 1.45; }
+.article-footer { display: flex; gap: 0.875rem; font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 0.25rem; }
+.article-author { font-weight: 500; color: var(--text-secondary); }
+.article-tags { display: flex; gap: 0.375rem; flex-wrap: wrap; }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 2rem;
-}
-.modal {
-  max-width: 700px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-}
-.modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-}
-.modal-close:hover { background: var(--light-bg); }
-.modal-header { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
-.modal h2 { margin: 0 0 0.5rem; }
-.modal-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--muted-text); margin-bottom: 1.5rem; }
-.modal-content p { line-height: 1.7; margin: 0 0 1rem; }
-.modal-actions { display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+/* Modal overrides */
+.modal-close:hover { background: var(--hover); }
+.modal-meta { display: flex; gap: 0.875rem; font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 1.25rem; }
+.modal-content p { line-height: 1.7; margin: 0 0 0.875rem; font-size: 0.9375rem; }
+.modal-actions { display: flex; gap: 0.5rem; padding-top: 0.875rem; border-top: 1px solid var(--border); }
 
 @media (max-width: 768px) {
-  .knowledge-header { flex-direction: column; gap: 1rem; }
+  .page-header { flex-direction: column; gap: 0.75rem; }
   .form-row { grid-template-columns: 1fr; }
   .featured-grid { grid-template-columns: 1fr; }
   .article-card { flex-direction: column; }
-  .article-icon { width: 100%; height: 50px; }
+  .article-icon { width: 100%; height: 44px; border-radius: 8px; }
 }
 </style>
