@@ -4,8 +4,8 @@ import {
 } from '@nestjs/common';
 import { TypeOrmModule, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CommunityGroup, CommunityPost, CommunityComment } from '../entities';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike } from '../entities';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 class CreateCommunityPostDto {
@@ -24,6 +24,7 @@ class CommunityService {
     @InjectRepository(CommunityGroup) private groupsRepo: Repository<CommunityGroup>,
     @InjectRepository(CommunityPost) private postsRepo: Repository<CommunityPost>,
     @InjectRepository(CommunityComment) private commentsRepo: Repository<CommunityComment>,
+    @InjectRepository(CommunityPostLike) private likesRepo: Repository<CommunityPostLike>,
   ) {}
 
   async onModuleInit() {
@@ -47,9 +48,18 @@ class CommunityService {
     return this.groupsRepo.findOne({ where: { id } });
   }
 
-  getPosts(groupId?: number) {
+  getPosts(groupId?: number, userId?: number) {
     const where = groupId ? { groupId } : {};
-    return this.postsRepo.find({ where, order: { createdAt: 'DESC' }, relations: ['author', 'comments', 'comments.author'] });
+    return this.postsRepo.find({ where, order: { createdAt: 'DESC' }, relations: ['author', 'comments', 'comments.author'] })
+      .then(posts => this.attachLikedMany(posts, userId));
+  }
+
+  private async attachLikedMany(posts: any[], userId?: number) {
+    if (!posts.length || !userId) return posts;
+    const likes = await this.likesRepo.find({ where: posts.map(p => ({ postId: p.id, userId })) });
+    const likedIds = new Set(likes.map(l => l.postId));
+    for (const p of posts) p.liked = likedIds.has(p.id);
+    return posts;
   }
 
   async createPost(authorId: number, dto: CreateCommunityPostDto) {
@@ -58,9 +68,18 @@ class CommunityService {
     return this.postsRepo.findOne({ where: { id: saved.id }, relations: ['author', 'comments', 'comments.author'] });
   }
 
-  async likePost(id: number) {
-    await this.postsRepo.increment({ id }, 'likes', 1);
-    return this.postsRepo.findOne({ where: { id }, relations: ['author', 'comments', 'comments.author'] });
+  async likePost(id: number, userId: number) {
+    const existing = await this.likesRepo.findOne({ where: { postId: id, userId } });
+    if (existing) {
+      await this.likesRepo.remove(existing);
+      await this.postsRepo.decrement({ id }, 'likes', 1);
+    } else {
+      await this.likesRepo.save({ postId: id, userId });
+      await this.postsRepo.increment({ id }, 'likes', 1);
+    }
+    const post = await this.postsRepo.findOne({ where: { id }, relations: ['author', 'comments', 'comments.author'] });
+    if (post) post['liked'] = !existing;
+    return post;
   }
 
   async addComment(postId: number, authorId: number, dto: CreateCommentDto) {
@@ -89,9 +108,10 @@ class CommunityController {
     return this.svc.joinGroup(id);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts')
-  getPosts(@Query('groupId') groupId: number) {
-    return this.svc.getPosts(groupId);
+  getPosts(@Query('groupId') groupId: number, @Request() req) {
+    return this.svc.getPosts(groupId, req?.user?.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -102,8 +122,8 @@ class CommunityController {
 
   @UseGuards(JwtAuthGuard)
   @HttpPost('posts/:id/like')
-  likePost(@Param('id') id: number) {
-    return this.svc.likePost(id);
+  likePost(@Param('id') id: number, @Request() req) {
+    return this.svc.likePost(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -114,7 +134,7 @@ class CommunityController {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CommunityGroup, CommunityPost, CommunityComment])],
+  imports: [TypeOrmModule.forFeature([CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike])],
   controllers: [CommunityController],
   providers: [CommunityService],
   exports: [CommunityService],

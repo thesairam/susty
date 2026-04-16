@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
-  User, Post, Reply, Listing, SustyEvent, EventRsvp, Message,
-  CommunityGroup, CommunityPost, CommunityComment,
+  User, Post, Reply, PostLike, Listing, SustyEvent, EventRsvp, Message,
+  CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike,
   Challenge, UserChallenge, Article, Donation, DonationRequest,
 } from './entities';
 import { AuthModule } from './auth/auth.module';
@@ -22,8 +22,8 @@ import { DonationsModule } from './donations/donations.module';
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgres://susty:susty_dev@localhost:5432/susty',
       entities: [
-        User, Post, Reply, Listing, SustyEvent, EventRsvp, Message,
-        CommunityGroup, CommunityPost, CommunityComment,
+        User, Post, Reply, PostLike, Listing, SustyEvent, EventRsvp, Message,
+        CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike,
         Challenge, UserChallenge, Article, Donation, DonationRequest,
       ],
       synchronize: true,

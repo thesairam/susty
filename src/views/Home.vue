@@ -99,7 +99,7 @@
           <!-- Actions -->
           <div class="post-actions">
             <button class="post-action" :class="{ liked: post.liked }" @click="toggleLike(post)">
-              <svg width="18" height="18" viewBox="0 0 24 24" :fill="post.liked ? '#ef4444' : 'none'" :stroke="post.liked ? '#ef4444' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              <svg class="heart-icon" :class="{ 'heart-pop': post.liked }" width="18" height="18" viewBox="0 0 24 24" :fill="post.liked ? '#ef4444' : 'none'" :stroke="post.liked ? '#ef4444' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
               <span v-if="post.likes">{{ post.likes }}</span>
             </button>
             <button class="post-action" @click="toggleReplies(post.id)">
@@ -219,6 +219,10 @@ export default {
       if (this.$refs.composeInput) this.$refs.composeInput.style.height = 'auto'
     },
     async toggleLike(post) {
+      const wasLiked = post.liked
+      // Optimistic update
+      post.liked = !wasLiked
+      post.likes = (post.likes || 0) + (wasLiked ? -1 : 1)
       const res = await api.likePost(post.id)
       if (res) Object.assign(post, res)
     },
@@ -446,6 +450,16 @@ export default {
 }
 .post-action:hover { background: var(--hover); color: var(--text); }
 .post-action.liked { color: var(--red); }
+
+/* Heart animation */
+.heart-icon { transition: transform 0.2s ease; }
+.heart-pop { animation: heartPop 0.35s ease; }
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
 
 /* ── Replies ── */
 .replies { margin-top: 0.75rem; }

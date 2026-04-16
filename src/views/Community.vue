@@ -48,7 +48,7 @@
           <p class="dp-content">{{ post.content }}</p>
           <div class="dp-actions">
             <button class="post-action" :class="{ liked: post.liked }" @click="toggleLike(post)">
-              <svg width="16" height="16" viewBox="0 0 24 24" :fill="post.liked ? '#ef4444' : 'none'" :stroke="post.liked ? '#ef4444' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              <svg class="heart-icon" :class="{ 'heart-pop': post.liked }" width="16" height="16" viewBox="0 0 24 24" :fill="post.liked ? '#ef4444' : 'none'" :stroke="post.liked ? '#ef4444' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
               <span>{{ post.likes || 0 }}</span>
             </button>
             <button class="post-action" @click="toggleComments(post.id)">
@@ -151,6 +151,9 @@ export default {
       this.newPost = { title: '', content: '' }
     },
     async toggleLike(post) {
+      const wasLiked = post.liked
+      post.liked = !wasLiked
+      post.likes = (post.likes || 0) + (wasLiked ? -1 : 1)
       const updated = await api.likeCommunityPost(post.id)
       if (updated) {
         const idx = this.communityPosts.findIndex(p => p.id === post.id)
@@ -229,6 +232,15 @@ export default {
 }
 .post-action:hover { background: var(--hover); color: var(--text); }
 .post-action.liked { color: var(--red); }
+
+.heart-icon { transition: transform 0.2s ease; }
+.heart-pop { animation: heartPop 0.35s ease; }
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
 
 /* Comments */
 .comments { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-light); }

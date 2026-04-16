@@ -1,6 +1,6 @@
 import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
-  ManyToOne, OneToMany, JoinColumn,
+  ManyToOne, OneToMany, JoinColumn, Unique,
 } from 'typeorm';
 
 // ─── User ───────────────────────────────────────────
@@ -12,7 +12,7 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ select: false })
   password: string;
 
   @Column()
@@ -88,6 +88,31 @@ export class Reply {
 
   @Column('text')
   content: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+
+// ─── PostLike ───────────────────────────────────────
+@Entity('post_likes')
+@Unique(['userId', 'postId'])
+export class PostLike {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  userId: number;
+
+  @Column()
+  postId: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @ManyToOne(() => Post, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'postId' })
+  post: Post;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -320,6 +345,31 @@ export class CommunityComment {
 
   @Column('text')
   content: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+
+// ─── CommunityPostLike ──────────────────────────────
+@Entity('community_post_likes')
+@Unique(['userId', 'postId'])
+export class CommunityPostLike {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  userId: number;
+
+  @Column()
+  postId: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @ManyToOne(() => CommunityPost, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'postId' })
+  post: CommunityPost;
 
   @CreateDateColumn()
   createdAt: Date;

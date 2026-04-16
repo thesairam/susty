@@ -4,8 +4,8 @@ import {
 } from '@nestjs/common';
 import { TypeOrmModule, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Post, Reply } from '../entities';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Post, Reply, PostLike } from '../entities';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IsString, IsOptional } from 'class-validator';
 
 class CreatePostDto {
@@ -23,22 +23,40 @@ class PostsService {
   constructor(
     @InjectRepository(Post) private postsRepo: Repository<Post>,
     @InjectRepository(Reply) private repliesRepo: Repository<Reply>,
+    @InjectRepository(PostLike) private likesRepo: Repository<PostLike>,
   ) {}
 
-  findAll(sort: string = 'latest') {
-    const order = sort === 'trending' ? { likes: 'DESC' as const } : { createdAt: 'DESC' as const };
-    return this.postsRepo.find({ order, relations: ['author', 'replies', 'replies.author'] });
+  private async attachLiked(post: any, userId?: number) {
+    if (!post || !userId) return post;
+    const like = await this.likesRepo.findOne({ where: { postId: post.id, userId } });
+    post.liked = !!like;
+    return post;
   }
 
-  findOne(id: number) {
-    return this.postsRepo.findOne({ where: { id }, relations: ['author', 'replies', 'replies.author'] });
+  private async attachLikedMany(posts: any[], userId?: number) {
+    if (!posts.length || !userId) return posts;
+    const likes = await this.likesRepo.find({ where: posts.map(p => ({ postId: p.id, userId })) });
+    const likedIds = new Set(likes.map(l => l.postId));
+    for (const p of posts) p.liked = likedIds.has(p.id);
+    return posts;
+  }
+
+  async findAll(sort: string = 'latest', userId?: number) {
+    const order = sort === 'trending' ? { likes: 'DESC' as const } : { createdAt: 'DESC' as const };
+    const posts = await this.postsRepo.find({ order, relations: ['author', 'replies', 'replies.author'] });
+    return this.attachLikedMany(posts, userId);
+  }
+
+  async findOne(id: number, userId?: number) {
+    const post = await this.postsRepo.findOne({ where: { id }, relations: ['author', 'replies', 'replies.author'] });
+    return this.attachLiked(post, userId);
   }
 
   async create(authorId: number, dto: CreatePostDto) {
     const hashtags = (dto.content.match(/#(\w+)/g) || []).map(h => h.slice(1));
     const post = this.postsRepo.create({ ...dto, authorId, hashtags });
     const saved = await this.postsRepo.save(post);
-    return this.findOne(saved.id);
+    return this.findOne(saved.id, authorId);
   }
 
   async remove(id: number, userId: number) {
@@ -50,9 +68,16 @@ class PostsService {
     return { success: false };
   }
 
-  async like(id: number) {
-    await this.postsRepo.increment({ id }, 'likes', 1);
-    return this.findOne(id);
+  async like(id: number, userId: number) {
+    const existing = await this.likesRepo.findOne({ where: { postId: id, userId } });
+    if (existing) {
+      await this.likesRepo.remove(existing);
+      await this.postsRepo.decrement({ id }, 'likes', 1);
+    } else {
+      await this.likesRepo.save({ postId: id, userId });
+      await this.postsRepo.increment({ id }, 'likes', 1);
+    }
+    return this.findOne(id, userId);
   }
 
   async repost(id: number) {
@@ -63,7 +88,7 @@ class PostsService {
   async addReply(postId: number, authorId: number, dto: CreateReplyDto) {
     const reply = this.repliesRepo.create({ postId, authorId, content: dto.content });
     await this.repliesRepo.save(reply);
-    return this.findOne(postId);
+    return this.findOne(postId, authorId);
   }
 
   countByUser(userId: number) {
@@ -75,14 +100,18 @@ class PostsService {
 class PostsController {
   constructor(private svc: PostsService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get()
-  findAll(@Query('sort') sort: string) {
-    return this.svc.findAll(sort);
+  findAll(@Query('sort') sort: string, @Request() req) {
+    const userId = req?.user?.id;
+    return this.svc.findAll(sort, userId);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.svc.findOne(id);
+  findOne(@Param('id') id: number, @Request() req) {
+    const userId = req?.user?.id;
+    return this.svc.findOne(id, userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -99,8 +128,8 @@ class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @HttpPost(':id/like')
-  like(@Param('id') id: number) {
-    return this.svc.like(id);
+  like(@Param('id') id: number, @Request() req) {
+    return this.svc.like(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -117,7 +146,7 @@ class PostsController {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, Reply])],
+  imports: [TypeOrmModule.forFeature([Post, Reply, PostLike])],
   controllers: [PostsController],
   providers: [PostsService],
   exports: [PostsService],
