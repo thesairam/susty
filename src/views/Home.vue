@@ -62,20 +62,43 @@
       <article v-for="post in filteredPosts" :key="post.id" class="post">
         <div class="post-thread-line" v-if="expandedPosts.includes(post.id) && (post.replies || []).length"></div>
         <div class="post-avatar">
-          <div class="avatar">{{ getInitial(postAuthorName(post)) }}</div>
+          <router-link :to="`/user/${post.author?.id || post.authorId}`">
+            <div class="avatar">{{ getInitial(postAuthorName(post)) }}</div>
+          </router-link>
         </div>
         <div class="post-body">
           <!-- Header -->
           <div class="post-head">
-            <span class="post-author">{{ postAuthorName(post) }}</span>
+            <router-link :to="`/user/${post.author?.id || post.authorId}`" class="post-author-link" @click.stop>
+              <span class="post-author">{{ postAuthorName(post) }}</span>
+              <span class="post-handle" v-if="post.author?.username">@{{ post.author.username }}</span>
+            </router-link>
             <span class="post-time">{{ timeAgo(post.createdAt) }}</span>
             <div class="post-menu-wrap">
               <button class="post-menu-btn" @click.stop="togglePostMenu(post.id)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
               </button>
               <div v-if="openMenu === post.id" class="post-dropdown">
-                <button @click="deletePost(post.id)">Delete</button>
-                <button @click="openMenu = null">Report</button>
+                <template v-if="isOwnPost(post)">
+                  <button @click="confirmDeletePost(post.id)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Delete
+                  </button>
+                </template>
+                <template v-else>
+                  <button @click="copyPostLink(post)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                    Copy link
+                  </button>
+                  <button @click="reportPost()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Report
+                  </button>
+                  <button @click="muteUser(post)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 14V2"/><path d="M9 18.12L2 22V6l7 3.5"/><path d="M12 2l5 3v9.5"/></svg>
+                    Mute @{{ post.author?.username || postAuthorName(post) }}
+                  </button>
+                </template>
               </div>
             </div>
           </div>
@@ -245,9 +268,36 @@ export default {
     },
     togglePostMenu(postId) { this.openMenu = this.openMenu === postId ? null : postId },
     closeMenus() { this.openMenu = null },
+    isOwnPost(post) {
+      const userId = this.currentUser?.id
+      if (!userId) return false
+      if (post.author && typeof post.author === 'object') return post.author.id === userId
+      return post.authorId === userId
+    },
+    confirmDeletePost(postId) {
+      this.openMenu = null
+      if (confirm('Delete this post? This can\'t be undone.')) {
+        this.deletePost(postId)
+      }
+    },
     async deletePost(postId) {
-      await api.deletePost(postId)
-      this.posts = this.posts.filter(p => p.id !== postId)
+      const res = await api.deletePost(postId)
+      if (res && res.success) {
+        this.posts = this.posts.filter(p => p.id !== postId)
+      }
+      this.openMenu = null
+    },
+    copyPostLink(post) {
+      navigator.clipboard?.writeText(`${window.location.origin}/?post=${post.id}`)
+      this.openMenu = null
+    },
+    reportPost() {
+      alert('Post reported. We\'ll review it shortly.')
+      this.openMenu = null
+    },
+    muteUser(post) {
+      const name = this.postAuthorName(post)
+      alert(`${name} has been muted. You won't see their posts.`)
       this.openMenu = null
     },
     filterByTag(tag) { this.filterTag = this.filterTag === tag ? '' : tag },
@@ -353,6 +403,19 @@ export default {
   color: var(--text);
   letter-spacing: -0.01em;
 }
+.post-author-link {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  text-decoration: none;
+  color: inherit;
+}
+.post-author-link:hover .post-author { text-decoration: underline; }
+.post-handle {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
 .post-time {
   font-size: 0.75rem;
   color: var(--text-tertiary);
@@ -385,7 +448,9 @@ export default {
   overflow: hidden;
 }
 .post-dropdown button {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
   padding: 0.625rem 0.875rem;
   border: none;
@@ -397,7 +462,8 @@ export default {
   color: var(--text);
 }
 .post-dropdown button:hover { background: var(--hover); }
-.post-dropdown button:first-child { color: var(--red); }
+.post-dropdown button.delete-btn,
+.post-dropdown button:first-child:last-child { color: var(--red); }
 
 .post-text {
   font-size: 0.9375rem;

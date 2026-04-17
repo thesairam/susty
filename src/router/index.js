@@ -10,6 +10,8 @@ import ChallengesView from '../views/Challenges.vue'
 import KnowledgeView from '../views/Knowledge.vue'
 import DonationsView from '../views/Donations.vue'
 import AuthView from '../views/AuthView.vue'
+import SearchView from '../views/Search.vue'
+import UserProfileView from '../views/UserProfile.vue'
 
 const routes = [
   { 
@@ -76,6 +78,18 @@ const routes = [
     path: '/auth', 
     name: 'Auth', 
     component: AuthView
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: SearchView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/user/:id',
+    name: 'UserProfile',
+    component: UserProfileView,
+    meta: { requiresAuth: true }
   }
 ]
 

@@ -1,6 +1,7 @@
 import {
   Module, Controller, Injectable,
   Get, Post as HttpPost, Delete, Param, Body, Query, UseGuards, Request,
+  ForbiddenException, NotFoundException,
 } from '@nestjs/common';
 import { TypeOrmModule, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -61,11 +62,10 @@ class PostsService {
 
   async remove(id: number, userId: number) {
     const post = await this.postsRepo.findOne({ where: { id } });
-    if (post && post.authorId === userId) {
-      await this.postsRepo.remove(post);
-      return { success: true };
-    }
-    return { success: false };
+    if (!post) throw new NotFoundException('Post not found');
+    if (post.authorId !== userId) throw new ForbiddenException('You can only delete your own posts');
+    await this.postsRepo.remove(post);
+    return { success: true };
   }
 
   async like(id: number, userId: number) {

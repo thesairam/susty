@@ -7,6 +7,7 @@
         <div class="avatar avatar-xl">{{ userInitial }}</div>
         <div class="profile-details">
           <h1>{{ userName }}</h1>
+          <p class="profile-handle" v-if="userUsername">@{{ userUsername }}</p>
           <p class="profile-email">{{ userEmail }}</p>
           <p class="profile-bio">{{ bio }}</p>
           <div class="profile-badges" v-if="earnedBadges.length">
@@ -23,6 +24,10 @@
       <div class="form-group">
         <label class="form-label">Display Name</label>
         <input v-model="editName" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input v-model="editUsername" class="form-input" placeholder="@username" />
       </div>
       <div class="form-group">
         <label class="form-label">Bio</label>
@@ -68,6 +73,7 @@
         <div class="card stat-card"><div class="stat-value">{{ activityStats.challengesCompleted }}</div><div class="stat-label">Challenges</div></div>
         <div class="card stat-card"><div class="stat-value">{{ activityStats.donations }}</div><div class="stat-label">Donations</div></div>
         <div class="card stat-card"><div class="stat-value">{{ activityStats.communityPosts }}</div><div class="stat-label">Community</div></div>
+        <div class="card stat-card"><div class="stat-value">{{ activityStats.roots || 0 }}</div><div class="stat-label">Roots</div></div>
       </div>
     </section>
 
@@ -108,6 +114,7 @@ export default {
     return {
       editMode: false,
       editName: '',
+      editUsername: '',
       editBio: '',
       bio: '',
       user: null,
@@ -117,6 +124,7 @@ export default {
   computed: {
     userName() { return this.user?.name || 'User' },
     userEmail() { return this.user?.email || '' },
+    userUsername() { return this.user?.username || '' },
     userInitial() { return this.userName.charAt(0).toUpperCase() },
     impact() {
       return this.stats?.impact || { co2Saved: '0.0', wasteReduced: '0.0', waterSaved: '0', treesEquiv: '0.0' }
@@ -151,11 +159,12 @@ export default {
     this.stats = stats
     this.bio = user?.bio || 'Sustainability enthusiast'
     this.editName = this.userName
+    this.editUsername = this.userUsername
     this.editBio = this.bio
   },
   methods: {
     async saveProfile() {
-      const updated = await api.updateUser(this.user.id, { name: this.editName.trim(), bio: this.editBio.trim() })
+      const updated = await api.updateUser(this.user.id, { name: this.editName.trim(), username: this.editUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''), bio: this.editBio.trim() })
       if (updated && !updated.error) {
         this.user = updated
         this.bio = updated.bio
@@ -176,6 +185,7 @@ export default {
 .profile-info .avatar-xl { border: 3px solid #fff; }
 .profile-details { flex: 1; min-width: 200px; }
 .profile-details h1 { margin: 0.375rem 0 0.1rem; font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; }
+.profile-handle { color: var(--text-secondary); margin: 0 0 0.2rem; font-size: 0.875rem; font-weight: 500; }
 .profile-email { color: var(--text-tertiary); margin: 0 0 0.2rem; font-size: 0.8125rem; }
 .profile-bio { margin: 0 0 0.375rem; font-size: 0.875rem; color: var(--text-secondary); }
 .profile-badges { display: flex; gap: 0.375rem; flex-wrap: wrap; }

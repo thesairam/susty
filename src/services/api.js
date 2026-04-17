@@ -16,6 +16,12 @@ async function request(path, options = {}) {
     window.location.href = '/auth';
     return null;
   }
+  if (res.status === 403) {
+    return { error: true, message: 'You don\'t have permission to do that' };
+  }
+  if (res.status === 404) {
+    return { error: true, message: 'Not found' };
+  }
   return res.json();
 }
 
@@ -34,6 +40,19 @@ export default {
   getUser: (id) => get(`/users/${id}`),
   updateUser: (id, data) => patch(`/users/${id}`, data),
   getUserStats: () => get('/users/me/stats'),
+  getPublicStats: (id) => get(`/users/${id}/stats`),
+
+  // Search
+  search: (q, type) => get(`/search?q=${encodeURIComponent(q)}${type ? '&type=' + type : ''}`),
+
+  // Connections (Roots)
+  getRoots: () => get('/connections/roots'),
+  getPendingRequests: () => get('/connections/pending'),
+  getSentRequests: () => get('/connections/sent'),
+  getConnectionStatus: (userId) => get(`/connections/status/${userId}`),
+  sendRootRequest: (userId) => post(`/connections/request/${userId}`),
+  acceptRoot: (id) => post(`/connections/${id}/accept`),
+  removeRoot: (id) => del(`/connections/${id}`),
 
   // Posts
   getPosts: (sort) => get(`/posts${sort ? `?sort=${sort}` : ''}`),

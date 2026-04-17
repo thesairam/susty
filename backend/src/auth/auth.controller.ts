@@ -42,6 +42,6 @@ export class AuthController {
   @Get('me')
   async me(@Request() req) {
     const user = await this.authService.findById(req.user.id);
-    return { id: user.id, email: user.email, name: user.name, bio: user.bio, avatar: user.avatar };
+    return { id: user.id, email: user.email, name: user.name, username: user.username, bio: user.bio, avatar: user.avatar };
   }
 }

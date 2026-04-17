@@ -18,11 +18,42 @@ export class User {
   @Column()
   name: string;
 
+  @Column({ unique: true })
+  username: string;
+
   @Column({ default: '' })
   bio: string;
 
   @Column({ default: '' })
   avatar: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+
+// ─── Connection (Roots) ─────────────────────────────
+@Entity('connections')
+@Unique(['requesterId', 'recipientId'])
+export class Connection {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  requesterId: number;
+
+  @Column()
+  recipientId: number;
+
+  @Column({ default: 'pending' })
+  status: string; // pending | accepted
+
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'requesterId' })
+  requester: User;
+
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'recipientId' })
+  recipient: User;
 
   @CreateDateColumn()
   createdAt: Date;

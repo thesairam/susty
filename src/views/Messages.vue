@@ -7,7 +7,24 @@
       <div class="conversations card">
         <div class="conversations-header">
           <input v-model="searchQuery" class="form-input search-input" placeholder="Search conversations..." />
+          <button class="btn btn-primary new-chat-btn" @click="showRootsPicker = !showRootsPicker" title="New Chat">+</button>
         </div>
+
+        <!-- Roots Picker -->
+        <div v-if="showRootsPicker" class="roots-picker">
+          <div class="roots-picker-header">
+            <strong>Start a chat with a Root</strong>
+            <button class="close-btn" @click="showRootsPicker = false">✕</button>
+          </div>
+          <div v-if="roots.length === 0" class="empty-state-mini">
+            <p>No Roots yet. Connect with people to start chatting!</p>
+          </div>
+          <div v-for="root in roots" :key="root.user.id" class="root-item" @click="startChatWithRoot(root.user)">
+            <div class="avatar avatar-sm">{{ root.user.name?.charAt(0).toUpperCase() }}</div>
+            <span>{{ root.user.name }}</span>
+          </div>
+        </div>
+
         <div class="conversations-list">
           <div v-if="filteredConversations.length === 0" class="empty-state-mini">
             <p>No conversations yet</p>
@@ -35,13 +52,14 @@
       <!-- Chat Area -->
       <div class="chat-area card">
         <div v-if="!activeConversation" class="empty-state">
-          <p>Select a conversation to start chatting</p>
+          <p>Select a conversation or start a new chat with a Root</p>
         </div>
 
         <template v-else>
           <div class="chat-header">
             <div class="avatar avatar-sm">{{ activeConversation.charAt(0).toUpperCase() }}</div>
             <strong>{{ activeConversation }}</strong>
+            <router-link v-if="activeConversationUserId" :to="`/user/${activeConversationUserId}`" class="view-profile-link">View Profile</router-link>
           </div>
 
           <div class="chat-messages" ref="chatMessages">
@@ -83,11 +101,13 @@ export default {
   data() {
     return {
       rawMessages: [],
+      roots: [],
       searchQuery: '',
       activeConversation: null,
       activeConversationName: '',
       activeConversationUserId: null,
-      newMessage: ''
+      newMessage: '',
+      showRootsPicker: false,
     }
   },
   computed: {
@@ -138,27 +158,56 @@ export default {
         .sort((a, b) => new Date(a.date) - new Date(b.date))
     }
   },
-  created() { this.loadMessages() },
+  created() {
+    this.loadMessages()
+    this.loadRoots()
+  },
+  mounted() {
+    // Handle incoming deep link from UserProfile "Message" button
+    const { userId, userName } = this.$route.query
+    if (userId) {
+      this.activeConversationUserId = Number(userId)
+      this.activeConversation = userName || 'User'
+      this.activeConversationName = userName || 'User'
+      this.loadConversationForUser(Number(userId))
+    }
+  },
   methods: {
     async selectConversation(participant, participantId) {
       this.activeConversation = participant
       this.activeConversationName = participant
       this.activeConversationUserId = participantId
+      this.showRootsPicker = false
       if (participantId) {
-        const msgs = await api.getConversation(participantId)
-        if (msgs) {
-          const otherIds = new Set(msgs.map(m => m.id))
-          this.rawMessages = this.rawMessages.filter(m => !otherIds.has(m.id)).concat(msgs)
-        }
+        await this.loadConversationForUser(participantId)
       }
+      this.$nextTick(() => this.scrollToBottom())
+    },
+    async loadConversationForUser(userId) {
+      const msgs = await api.getConversation(userId)
+      if (msgs) {
+        const otherIds = new Set(msgs.map(m => m.id))
+        this.rawMessages = this.rawMessages.filter(m => !otherIds.has(m.id)).concat(msgs)
+      }
+    },
+    startChatWithRoot(user) {
+      this.activeConversation = user.name
+      this.activeConversationName = user.name
+      this.activeConversationUserId = user.id
+      this.showRootsPicker = false
+      this.loadConversationForUser(user.id)
       this.$nextTick(() => this.scrollToBottom())
     },
     async sendMessage() {
       if (!this.newMessage.trim() || !this.activeConversationUserId) return
       const msg = await api.sendMessage(this.activeConversationUserId, this.newMessage.trim())
-      if (msg) this.rawMessages.push(msg)
-      this.newMessage = ''
-      this.$nextTick(() => this.scrollToBottom())
+      if (msg && !msg.error) {
+        this.rawMessages.push(msg)
+        this.newMessage = ''
+        this.$nextTick(() => this.scrollToBottom())
+      } else if (msg?.message) {
+        alert(msg.message)
+      }
     },
     scrollToBottom() {
       const el = this.$refs.chatMessages
@@ -177,6 +226,10 @@ export default {
     async loadMessages() {
       const data = await api.getMessages()
       if (data) this.rawMessages = data
+    },
+    async loadRoots() {
+      const data = await api.getRoots()
+      if (data) this.roots = data
     }
   }
 }
@@ -195,8 +248,50 @@ export default {
 }
 
 .conversations { display: flex; flex-direction: column; overflow: hidden; }
-.conversations-header { padding-bottom: 0.625rem; }
-.search-input { font-size: 0.8125rem; }
+.conversations-header { padding-bottom: 0.625rem; display: flex; gap: 0.5rem; align-items: center; }
+.search-input { font-size: 0.8125rem; flex: 1; }
+.new-chat-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Roots Picker */
+.roots-picker {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.roots-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+.close-btn { background: none; border: none; cursor: pointer; color: var(--text-tertiary); font-size: 0.875rem; }
+.close-btn:hover { color: var(--text); }
+.root-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: background 0.15s;
+}
+.root-item:hover { background: var(--hover); }
+
 .conversations-list { flex: 1; overflow-y: auto; margin: 0 -1.25rem; }
 
 .convo-item {
@@ -234,6 +329,13 @@ export default {
   margin-bottom: 0.625rem;
   font-size: 0.9375rem;
 }
+.view-profile-link {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  text-decoration: none;
+}
+.view-profile-link:hover { color: var(--green); }
 .chat-messages {
   flex: 1;
   overflow-y: auto;

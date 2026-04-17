@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
-  User, Post, Reply, PostLike, Listing, SustyEvent, EventRsvp, Message,
+  User, Post, Reply, PostLike, Connection, Listing, SustyEvent, EventRsvp, Message,
   CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike,
   Challenge, UserChallenge, Article, Donation, DonationRequest,
 } from './entities';
@@ -15,6 +15,8 @@ import { CommunityModule } from './community/community.module';
 import { ChallengesModule } from './challenges/challenges.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { DonationsModule } from './donations/donations.module';
+import { ConnectionsModule } from './connections/connections.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -22,7 +24,7 @@ import { DonationsModule } from './donations/donations.module';
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgres://susty:susty_dev@localhost:5432/susty',
       entities: [
-        User, Post, Reply, PostLike, Listing, SustyEvent, EventRsvp, Message,
+        User, Post, Reply, PostLike, Connection, Listing, SustyEvent, EventRsvp, Message,
         CommunityGroup, CommunityPost, CommunityComment, CommunityPostLike,
         Challenge, UserChallenge, Article, Donation, DonationRequest,
       ],
@@ -38,6 +40,8 @@ import { DonationsModule } from './donations/donations.module';
     ChallengesModule,
     KnowledgeModule,
     DonationsModule,
+    ConnectionsModule,
+    SearchModule,
   ],
 })
 export class AppModule {}
